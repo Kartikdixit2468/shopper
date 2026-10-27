@@ -320,7 +320,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
           ) : null}
 
           {step === "design" ? (
-            <form action={saveDesign} className="setup-form" encType="multipart/form-data">
+            <form action={saveDesign} className="setup-form">
               <div className="setup-form-heading">
                 <span>
                   <Palette size={20} />
@@ -398,7 +398,7 @@ export default async function SetupPage({ searchParams }: SetupPageProps) {
                 <Link href="/onboarding/setup?step=contact">
                   <ArrowLeft size={17} /> Back
                 </Link>
-                <SubmitButton>
+                <SubmitButton pendingText="Saving design…">
                   Save and review <ArrowRight size={17} />
                 </SubmitButton>
               </div>

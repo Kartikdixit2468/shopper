@@ -1,8 +1,14 @@
-import { Eye, EyeOff, ImagePlus, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Eye, EyeOff, ImagePlus, Plus, Sparkles, Trash2, UploadCloud } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
+import Link from "next/link";
 
-import { createListing, deleteListing, toggleListing } from "@/app/actions/presence";
+import {
+  createListing,
+  deleteListing,
+  publishPresence,
+  toggleListing,
+} from "@/app/actions/presence";
 import { MerchantShell } from "@/components/merchant-shell";
 import { SubmitButton } from "@/components/submit-button";
 import { requireMerchantStore } from "@/lib/merchant";
@@ -21,7 +27,19 @@ export default async function ListingsPage({ searchParams }: ListingsPageProps) 
     <MerchantShell active="listings" published={live} storeName={store.name} storeSlug={store.slug}>
       <div className="merchant-page">
         {params.created ? (
-          <div className="success-banner">Highlight added to your draft.</div>
+          <div className="success-banner listing-saved-banner">
+            <span>
+              Highlight added to your draft.
+              {live ? " Publish your changes when you’re ready to show it publicly." : ""}
+            </span>
+            {live ? (
+              <form action={publishPresence}>
+                <SubmitButton pendingText="Publishing…">
+                  <UploadCloud size={16} /> Publish now
+                </SubmitButton>
+              </form>
+            ) : null}
+          </div>
         ) : null}
         {params.error ? <div className="inline-alert error-alert">{params.error}</div> : null}
         <header className="merchant-page-header">
@@ -32,6 +50,18 @@ export default async function ListingsPage({ searchParams }: ListingsPageProps) 
               These are informational highlights with an Enquire action—not products or online
               checkout.
             </p>
+          </div>
+          <div className="editor-header-actions">
+            <Link href="/dashboard/preview" target="_blank">
+              <Eye size={17} /> Preview draft
+            </Link>
+            {live ? (
+              <form action={publishPresence}>
+                <SubmitButton pendingText="Publishing…">
+                  <UploadCloud size={17} /> Publish changes
+                </SubmitButton>
+              </form>
+            ) : null}
           </div>
         </header>
 
@@ -44,7 +74,7 @@ export default async function ListingsPage({ searchParams }: ListingsPageProps) 
                 <small>A service, speciality, or popular item</small>
               </span>
             </div>
-            <form action={createListing} encType="multipart/form-data">
+            <form action={createListing}>
               <label>
                 Name
                 <input
@@ -91,6 +121,9 @@ export default async function ListingsPage({ searchParams }: ListingsPageProps) 
                   {store.listings.length ? `${store.listings.length} added` : "Nothing added yet"}
                 </h2>
               </div>
+              {live ? (
+                <small>Draft changes appear publicly only after you publish again.</small>
+              ) : null}
             </div>
             {store.listings.length ? (
               <div className="merchant-listing-grid">

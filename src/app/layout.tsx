@@ -5,6 +5,7 @@ import { siteConfig } from "@/lib/config";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteConfig.url),
   title: {
     default: `${siteConfig.name} — Put your local business online`,
     template: `%s — ${siteConfig.name}`,

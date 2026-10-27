@@ -70,6 +70,19 @@ Without the Supabase Auth variables the public marketing site still renders, but
 
 The current adapter stores JPEG, PNG, and WebP files up to 5 MB in `.data/uploads`; random server-generated keys prevent path injection. This is appropriate for local development and a single EC2 instance with a persistent volume. For horizontally scaled or ephemeral hosting, replace the small storage adapter in `src/lib/storage.ts` with S3-compatible object storage. Store/domain code and database records do not need to change.
 
+### Render deployment
+
+Deploy this application as a Node Web Service, not a static site. Use a paid service with a persistent disk mounted at `/opt/render/project/src/.data`; free services and diskless services lose uploaded media when restarted or redeployed.
+
+```text
+Build command: pnpm install --frozen-lockfile && pnpm db:generate && pnpm build
+Pre-deploy command: pnpm db:deploy
+Start command: pnpm start
+Health check path: /
+```
+
+Configure every variable from `.env.example` in Render. Set `NEXT_PUBLIC_SITE_URL` to the final HTTPS service/domain URL. Keep `DATABASE_URL` on Supabase's transaction pooler and `DIRECT_URL` on its session/direct connection for migrations. After Render assigns the production URL, add `https://YOUR_DOMAIN/auth/callback` to Supabase Authentication's redirect allow list. Choose a Render region close to the Supabase database; the current EU database is best matched by Frankfurt among Render's available regions.
+
 ## Verification commands
 
 ```bash

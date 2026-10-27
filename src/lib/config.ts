@@ -1,5 +1,6 @@
 export const siteConfig = {
   name: process.env.NEXT_PUBLIC_PRODUCT_NAME?.trim() || "Your Storefront",
+  url: process.env.NEXT_PUBLIC_SITE_URL?.trim() || "http://localhost:3000",
   description:
     "A simple way for independent Indian businesses to create a polished online presence and grow into local ordering.",
 } as const;

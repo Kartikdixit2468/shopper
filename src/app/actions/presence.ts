@@ -8,6 +8,7 @@ import { z } from "zod";
 import { ensurePresenceScaffold, requireMerchantStore } from "@/lib/merchant";
 import {
   buildPresenceSnapshot,
+  defaultSections,
   fontSets,
   getPresenceChecklist,
   normalizeIndianPhone,
@@ -182,49 +183,33 @@ async function saveContactData(formData: FormData) {
   if (!parsed.success)
     throw new Error(parsed.error.issues[0]?.message ?? "Check your contact details.");
 
-  await prisma.storeContact.upsert({
-    where: { storeId: store.id },
-    update: {
-      phone: parsed.data.phone ? normalizeIndianPhone(parsed.data.phone) : null,
-      whatsappNumber: parsed.data.whatsappNumber
-        ? normalizeIndianPhone(parsed.data.whatsappNumber)
-        : null,
-      addressLine: parsed.data.addressLine,
-      locality: parsed.data.locality,
-      city: parsed.data.city,
-      state: parsed.data.state,
-      postalCode: parsed.data.postalCode,
-      mapUrl: parsed.data.mapUrl,
-      openingHours: parsed.data.openingHours
-        ? { summary: parsed.data.openingHours }
+  const contactData = {
+    phone: parsed.data.phone ? normalizeIndianPhone(parsed.data.phone) : null,
+    whatsappNumber: parsed.data.whatsappNumber
+      ? normalizeIndianPhone(parsed.data.whatsappNumber)
+      : null,
+    addressLine: parsed.data.addressLine,
+    locality: parsed.data.locality,
+    city: parsed.data.city,
+    state: parsed.data.state,
+    postalCode: parsed.data.postalCode,
+    mapUrl: parsed.data.mapUrl,
+    openingHours: parsed.data.openingHours
+      ? { summary: parsed.data.openingHours }
+      : Prisma.JsonNull,
+    socials:
+      parsed.data.instagram || parsed.data.facebook
+        ? { instagram: parsed.data.instagram, facebook: parsed.data.facebook }
         : Prisma.JsonNull,
-      socials:
-        parsed.data.instagram || parsed.data.facebook
-          ? { instagram: parsed.data.instagram, facebook: parsed.data.facebook }
-          : Prisma.JsonNull,
-    },
-    create: {
-      storeId: store.id,
-      phone: parsed.data.phone ? normalizeIndianPhone(parsed.data.phone) : null,
-      whatsappNumber: parsed.data.whatsappNumber
-        ? normalizeIndianPhone(parsed.data.whatsappNumber)
-        : null,
-      addressLine: parsed.data.addressLine,
-      locality: parsed.data.locality,
-      city: parsed.data.city,
-      state: parsed.data.state,
-      postalCode: parsed.data.postalCode,
-      mapUrl: parsed.data.mapUrl,
-      openingHours: parsed.data.openingHours
-        ? { summary: parsed.data.openingHours }
-        : Prisma.JsonNull,
-      socials:
-        parsed.data.instagram || parsed.data.facebook
-          ? { instagram: parsed.data.instagram, facebook: parsed.data.facebook }
-          : Prisma.JsonNull,
-    },
-  });
-  await prisma.store.update({ where: { id: store.id }, data: { onboardingStep: "BRANDING" } });
+  };
+  await prisma.$transaction([
+    prisma.storeContact.upsert({
+      where: { storeId: store.id },
+      update: contactData,
+      create: { storeId: store.id, ...contactData },
+    }),
+    prisma.store.update({ where: { id: store.id }, data: { onboardingStep: "BRANDING" } }),
+  ]);
 }
 
 export async function autosaveContact(formData: FormData): Promise<AutosaveState> {
@@ -276,22 +261,27 @@ export async function saveDesign(formData: FormData) {
         ? await createMedia(store.id, coverFile, "COVER", `${store.name ?? "Business"} cover`)
         : null;
 
-    await prisma.themeConfig.upsert({
-      where: { storeId: store.id },
-      update: {
-        ...parsed.data,
-        ...(logo ? { logoAssetId: logo.id } : {}),
-        ...(cover ? { coverAssetId: cover.id } : {}),
-      },
-      create: {
-        storeId: store.id,
-        ...parsed.data,
-        logoAssetId: logo?.id,
-        coverAssetId: cover?.id,
-      },
-    });
-    await ensurePresenceScaffold(store.id);
-    await prisma.store.update({ where: { id: store.id }, data: { onboardingStep: "REVIEW" } });
+    await prisma.$transaction([
+      prisma.themeConfig.upsert({
+        where: { storeId: store.id },
+        update: {
+          ...parsed.data,
+          ...(logo ? { logoAssetId: logo.id } : {}),
+          ...(cover ? { coverAssetId: cover.id } : {}),
+        },
+        create: {
+          storeId: store.id,
+          ...parsed.data,
+          logoAssetId: logo?.id,
+          coverAssetId: cover?.id,
+        },
+      }),
+      prisma.pageSection.createMany({
+        data: defaultSections.map((section) => ({ storeId: store.id, ...section })),
+        skipDuplicates: true,
+      }),
+      prisma.store.update({ where: { id: store.id }, data: { onboardingStep: "REVIEW" } }),
+    ]);
   } catch (error) {
     redirect(
       `/onboarding/setup?step=design&error=${encodeURIComponent(error instanceof Error ? error.message : "Could not save design")}`,
@@ -473,16 +463,12 @@ export async function createListing(formData: FormData) {
       file instanceof File && file.size
         ? await createMedia(store.id, file, "LISTING", parsed.data.title)
         : null;
-    const last = await prisma.listing.aggregate({
-      where: { storeId: store.id },
-      _max: { sortOrder: true },
-    });
     await prisma.listing.create({
       data: {
         storeId: store.id,
         ...parsed.data,
         imageAssetId: image?.id,
-        sortOrder: (last._max.sortOrder ?? -1) + 1,
+        sortOrder: Math.max(-1, ...store.listings.map((listing) => listing.sortOrder)) + 1,
       },
     });
   } catch (error) {
@@ -515,11 +501,14 @@ export async function deleteListing(formData: FormData) {
 
 export async function publishPresence() {
   const { store: ownedStore } = await requireMerchantStore();
-  await ensurePresenceScaffold(ownedStore.id);
-  const store = await prisma.store.findUniqueOrThrow({
-    where: { id: ownedStore.id },
-    include: presenceInclude,
-  });
+  let store = ownedStore;
+  if (!store.theme || store.sections.length === 0) {
+    await ensurePresenceScaffold(store.id);
+    store = await prisma.store.findUniqueOrThrow({
+      where: { id: ownedStore.id },
+      include: presenceInclude,
+    });
+  }
   const checklist = getPresenceChecklist(store);
   if (!checklist.complete)
     redirect("/onboarding/setup?step=review&error=Complete+the+required+details+first.");

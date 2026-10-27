@@ -1,6 +1,5 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -21,18 +20,9 @@ export async function createDraftStore(formData: FormData) {
     redirect("/onboarding/type?error=invalid-mode");
   }
 
-  const existingStore = await prisma.store.findUnique({
-    where: { ownerUserId: user.id },
-    select: { id: true },
-  });
-
-  if (existingStore) {
-    redirect("/dashboard");
-  }
-
-  try {
-    const profile = profileDataFromAuthUser(user);
-    await prisma.profile.upsert({
+  const profile = profileDataFromAuthUser(user);
+  const [, store] = await prisma.$transaction([
+    prisma.profile.upsert({
       where: { id: user.id },
       update: {
         email: profile.email,
@@ -40,23 +30,22 @@ export async function createDraftStore(formData: FormData) {
         avatarUrl: profile.avatarUrl,
       },
       create: profile,
-    });
-
-    await prisma.store.create({
-      data: {
+    }),
+    prisma.store.upsert({
+      where: { ownerUserId: user.id },
+      update: {},
+      create: {
         ownerUserId: user.id,
         type: parsedType.data,
         status: "DRAFT",
         onboardingStep: "BASICS",
       },
-    });
-  } catch (error) {
-    // A unique owner constraint closes the race between two submitted tabs.
-    if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002")) {
-      throw error;
-    }
-  }
+      select: { onboardingStep: true },
+    }),
+  ]);
 
   revalidatePath("/dashboard");
-  redirect("/onboarding/setup?step=basics&created=1");
+  redirect(
+    store.onboardingStep === "COMPLETE" ? "/dashboard" : "/onboarding/setup?step=basics&created=1",
+  );
 }

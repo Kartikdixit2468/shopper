@@ -25,13 +25,10 @@ export async function ensurePresenceScaffold(storeId: string) {
       update: {},
       create: { storeId },
     }),
-    ...defaultSections.map((section) =>
-      prisma.pageSection.upsert({
-        where: { storeId_type: { storeId, type: section.type } },
-        update: {},
-        create: { storeId, ...section },
-      }),
-    ),
+    prisma.pageSection.createMany({
+      data: defaultSections.map((section) => ({ storeId, ...section })),
+      skipDuplicates: true,
+    }),
   ]);
 }
 

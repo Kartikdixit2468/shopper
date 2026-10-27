@@ -5,9 +5,11 @@ import { useFormStatus } from "react-dom";
 export function SubmitButton({
   children,
   className,
+  pendingText = "Saving…",
 }: {
   children: React.ReactNode;
   className?: string;
+  pendingText?: string;
 }) {
   const { pending } = useFormStatus();
 
@@ -19,7 +21,7 @@ export function SubmitButton({
       aria-disabled={pending}
     >
       {pending ? <span className="button-spinner" aria-hidden="true" /> : null}
-      {pending ? "Saving your choice…" : children}
+      {pending ? pendingText : children}
     </button>
   );
 }

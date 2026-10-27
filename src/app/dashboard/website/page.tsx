@@ -108,11 +108,7 @@ export default async function WebsitePage({ searchParams }: WebsitePageProps) {
                   <small>Template, colours and photos</small>
                 </span>
               </summary>
-              <form
-                action={saveBranding}
-                className="editor-panel-body"
-                encType="multipart/form-data"
-              >
+              <form action={saveBranding} className="editor-panel-body">
                 <label>
                   Template
                   <select defaultValue={store.theme?.templateId ?? "canvas"} name="templateId">
@@ -254,11 +250,7 @@ export default async function WebsitePage({ searchParams }: WebsitePageProps) {
                   Add authentic photos of your storefront, team, or work.
                 </p>
               )}
-              <form
-                action={uploadGalleryImage}
-                className="gallery-upload"
-                encType="multipart/form-data"
-              >
+              <form action={uploadGalleryImage} className="gallery-upload">
                 <input accept="image/jpeg,image/png,image/webp" name="image" required type="file" />
                 <input name="altText" placeholder="Describe this photo" />
                 <SubmitButton>Add photo</SubmitButton>

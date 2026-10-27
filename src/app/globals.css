@@ -2307,6 +2307,16 @@ button {
   font-size: 12px;
   font-weight: 700;
 }
+.listing-saved-banner {
+  justify-content: space-between;
+}
+.listing-saved-banner form {
+  flex: 0 0 auto;
+}
+.listing-saved-banner button {
+  min-height: 36px;
+  padding: 0 13px;
+}
 
 .dashboard-welcome {
   display: flex;
@@ -3858,6 +3868,20 @@ button {
   margin: 5px 0 18px;
   font-size: 24px;
 }
+.collection-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.collection-heading > small {
+  max-width: 250px;
+  margin-bottom: 18px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: right;
+}
 .merchant-listing-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -4613,6 +4637,15 @@ button {
 }
 
 @media (max-width: 760px) {
+  .listing-saved-banner,
+  .collection-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .collection-heading > small {
+    margin: -10px 0 18px;
+    text-align: left;
+  }
   .setup-topbar > span {
     display: none;
   }
@@ -4905,4 +4938,68 @@ button {
   .presence-listing-grid h3 {
     font-size: 17px;
   }
+}
+
+.app-error-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 20% 10%, rgba(244, 173, 130, 0.2), transparent 34%), #f7f8f4;
+  color: var(--ink);
+}
+.app-error-page section {
+  width: min(100%, 560px);
+  padding: clamp(28px, 6vw, 54px);
+  border: 1px solid rgba(27, 49, 44, 0.12);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 24px 70px rgba(27, 49, 44, 0.1);
+}
+.app-error-page span {
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.app-error-page h1 {
+  margin: 12px 0;
+  font-size: clamp(32px, 6vw, 52px);
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+}
+.app-error-page p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.app-error-page div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 25px;
+}
+.app-error-page button,
+.app-error-page a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 17px;
+  border: 1px solid var(--green-dark);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.app-error-page button {
+  background: var(--green-dark);
+  color: white;
+}
+.app-error-page a {
+  color: var(--green-dark);
 }
