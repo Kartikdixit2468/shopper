@@ -54,3 +54,15 @@ The portable unit is the PostgreSQL database and its Prisma migrations.
 6. Run `pnpm db:deploy`, restart the application, and verify login plus draft-store reads.
 
 Because profiles, constraints, enums, and store data live in ordinary PostgreSQL tables, this move does not require replacing Prisma or application queries. Supabase Auth remains the identity provider after a database-only move. Replacing or self-hosting authentication later would require changing the isolated Supabase auth client and callback boundary, not the store repository.
+
+## Presence data model
+
+Presence editing uses normalized draft tables for contacts, theme configuration, sections, listings, and media metadata. Publishing creates an immutable JSON snapshot in `StoreRevision`; the public storefront reads only the latest published revision. This keeps unpublished edits private and makes rollback/history possible without coupling the public route to mutable draft rows.
+
+Every merchant query is constrained by the authenticated Supabase user ID and the store's `ownerUserId`. The integration verifier runs ownership and immutable-snapshot checks inside a transaction and intentionally rolls it back:
+
+```bash
+pnpm test:presence-db
+```
+
+For local development, the application prefers `DIRECT_URL` because the dev server is long-running. Production uses `DATABASE_URL`, allowing an EC2/RDS direct connection or a serverless-compatible Supabase transaction-pooler URL without code changes.

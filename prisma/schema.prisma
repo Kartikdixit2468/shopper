@@ -28,6 +28,24 @@ enum OnboardingStep {
   COMPLETE
 }
 
+enum PageSectionType {
+  HERO
+  ABOUT
+  GALLERY
+  LISTINGS
+  HOURS
+  LOCATION
+  CONTACT
+  SOCIAL
+}
+
+enum MediaKind {
+  LOGO
+  COVER
+  GALLERY
+  LISTING
+}
+
 model Profile {
   id        String   @id @db.Uuid
   email     String?  @unique
@@ -39,22 +57,119 @@ model Profile {
 }
 
 model Store {
-  id               String         @id @default(cuid())
-  ownerUserId      String         @unique @db.Uuid
-  owner            Profile        @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  id               String          @id @default(cuid())
+  ownerUserId      String          @unique @db.Uuid
+  owner            Profile         @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
   type             StoreType
-  status           StoreStatus    @default(DRAFT)
-  onboardingStep   OnboardingStep @default(BASICS)
+  status           StoreStatus     @default(DRAFT)
+  onboardingStep   OnboardingStep  @default(BASICS)
   name             String?
-  slug             String?        @unique
+  slug             String?         @unique
   category         String?
-  shortDescription String?        @db.VarChar(300)
-  timezone         String         @default("Asia/Kolkata")
-  locale           String         @default("en-IN")
+  shortDescription String?         @db.VarChar(300)
+  timezone         String          @default("Asia/Kolkata")
+  locale           String          @default("en-IN")
   publishedAt      DateTime?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  contact          StoreContact?
+  theme            ThemeConfig?
+  sections         PageSection[]
+  listings         Listing[]
+  mediaAssets      MediaAsset[]
+  revisions        StoreRevision[]
 
   @@index([ownerUserId, status])
   @@index([slug, status])
+}
+
+model StoreContact {
+  id             String   @id @default(cuid())
+  storeId        String   @unique
+  store          Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  phone          String?
+  whatsappNumber String?
+  addressLine    String?
+  locality       String
+  city           String
+  state          String?
+  postalCode     String?
+  mapUrl         String?
+  openingHours   Json?
+  socials        Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ThemeConfig {
+  id           String   @id @default(cuid())
+  storeId      String   @unique
+  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  templateId   String   @default("canvas")
+  primaryColor String   @default("#167D6D")
+  accentColor  String   @default("#F4AD82")
+  fontSet      String   @default("modern")
+  logoAssetId  String?
+  coverAssetId String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model PageSection {
+  id                String          @id @default(cuid())
+  storeId           String
+  store             Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  type              PageSectionType
+  sortOrder         Int
+  visible           Boolean         @default(true)
+  schemaVersion     Int             @default(1)
+  structuredContent Json
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@unique([storeId, type])
+  @@index([storeId, sortOrder])
+}
+
+model Listing {
+  id           String   @id @default(cuid())
+  storeId      String
+  store        Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?  @db.VarChar(500)
+  category     String?
+  priceDisplay String?
+  imageAssetId String?
+  visible      Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([storeId, visible, sortOrder])
+}
+
+model MediaAsset {
+  id         String    @id @default(cuid())
+  storeId    String
+  store      Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  kind       MediaKind
+  storageKey String    @unique
+  mimeType   String
+  bytes      Int
+  altText    String?
+  createdAt  DateTime  @default(now())
+
+  @@index([storeId, kind])
+}
+
+model StoreRevision {
+  id          String   @id @default(cuid())
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  revisionNo  Int
+  snapshot    Json
+  publishedAt DateTime @default(now())
+
+  @@unique([storeId, revisionNo])
+  @@index([storeId, publishedAt])
 }

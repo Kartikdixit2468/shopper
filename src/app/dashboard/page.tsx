@@ -1,116 +1,161 @@
 import {
-  ArrowUpRight,
+  ArrowRight,
   CheckCircle2,
-  CircleDot,
-  Clock3,
-  LogOut,
-  Store as StoreIcon,
+  ExternalLink,
+  Globe2,
+  Pencil,
+  QrCode,
+  Sparkles,
 } from "lucide-react";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import Link from "next/link";
 
-import { signOutUser } from "@/app/actions/auth";
-import { Logo } from "@/components/logo";
-import { getCurrentUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { storeModeContent } from "@/lib/store-mode";
+import { MerchantShell } from "@/components/merchant-shell";
+import { CopyLinkButton } from "@/components/share-actions";
+import { requireMerchantStore } from "@/lib/merchant";
+import { getPresenceChecklist } from "@/lib/presence";
 
-export const metadata: Metadata = { title: "Your draft" };
+export const metadata: Metadata = { title: "Your business" };
 export const dynamic = "force-dynamic";
 
-type DashboardProps = { searchParams: Promise<{ created?: string }> };
+type DashboardProps = {
+  searchParams: Promise<{ published?: string; upgraded?: string }>;
+};
 
 export default async function DashboardPage({ searchParams }: DashboardProps) {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-
-  const store = await prisma.store.findUnique({ where: { ownerUserId: user.id } });
-  if (!store) redirect("/onboarding/type");
-
   const params = await searchParams;
-  const mode = storeModeContent[store.type];
+  const { store } = await requireMerchantStore();
+  const checklist = getPresenceChecklist(store);
+  const completed = checklist.checks.filter((item) => item.complete).length;
+  const live = store.status === "PUBLISHED" && Boolean(store.slug);
 
   return (
-    <main className="dashboard-page">
-      <header className="dashboard-header">
-        <div className="shell dashboard-header-inner">
-          <Logo href="/dashboard" />
-          <form action={signOutUser}>
-            <button className="dashboard-signout" type="submit">
-              <LogOut size={16} /> Sign out
-            </button>
-          </form>
-        </div>
-      </header>
-
-      <div className="shell dashboard-main">
-        {params.created === "1" ? (
-          <div className="success-banner" role="status">
-            <CheckCircle2 size={20} /> Your choice is saved. This draft will be here when you
-            return.
+    <MerchantShell active="overview" published={live} storeName={store.name} storeSlug={store.slug}>
+      <div className="merchant-page">
+        {params.published ? (
+          <div className="success-banner">
+            <CheckCircle2 size={20} /> Your website is live. You can share it now.
           </div>
         ) : null}
-
-        <div className="dashboard-welcome">
-          <div>
-            <span className="dashboard-eyebrow">Your business workspace</span>
-            <h1>
-              Good to see you
-              {user.user_metadata.full_name
-                ? `, ${String(user.user_metadata.full_name).split(" ")[0]}`
-                : ""}
-              .
-            </h1>
-            <p>Your {mode.label} draft is secure and ready for the next setup step.</p>
+        {params.upgraded ? (
+          <div className="success-banner">
+            <CheckCircle2 size={20} /> Local Store mode is enabled. Ordering tools arrive in Slice
+            3.
           </div>
-          <span className="draft-pill">
-            <CircleDot size={14} /> Draft
-          </span>
-        </div>
+        ) : null}
+        <header className="merchant-page-header">
+          <div>
+            <span className="dashboard-eyebrow">Business overview</span>
+            <h1>
+              {store.name ? `Welcome back to ${store.name}` : "Let’s finish your business page"}
+            </h1>
+            <p>
+              {live
+                ? "Your public website is online. New changes stay in draft until you publish again."
+                : "Complete your details, preview your page, and publish when it feels right."}
+            </p>
+          </div>
+          <Link
+            className="merchant-primary-action"
+            href={store.onboardingStep === "COMPLETE" ? "/dashboard/website" : "/onboarding/setup"}
+          >
+            {store.onboardingStep === "COMPLETE" ? "Edit website" : "Continue setup"}{" "}
+            <ArrowRight size={17} />
+          </Link>
+        </header>
 
-        <div className="dashboard-grid">
-          <section className="draft-overview">
-            <div className="draft-overview-top">
-              <span className="dashboard-store-icon">
-                <StoreIcon size={25} />
+        <div className="overview-status-grid">
+          <section className="website-status-card">
+            <div className="status-card-top">
+              <span className={live ? "is-live" : "is-draft"}>
+                <Globe2 size={18} />
               </span>
-              <div>
-                <span className="dashboard-label">Selected store type</span>
-                <h2>{mode.title}</h2>
-              </div>
+              <small>{live ? "Published website" : "Private draft"}</small>
             </div>
-            <p>{mode.description}</p>
-            <div className="draft-facts">
-              <div>
-                <Clock3 size={18} />
-                <span>
-                  <small>Status</small>
-                  <strong>Draft saved</strong>
-                </span>
-              </div>
-              <div>
-                <CheckCircle2 size={18} />
-                <span>
-                  <small>Next step</small>
-                  <strong>Business basics</strong>
-                </span>
-              </div>
+            <h2>{live ? "Your business is online" : "Your page is taking shape"}</h2>
+            <p>
+              {live
+                ? `Customers can visit /s/${store.slug}`
+                : `${completed} of ${checklist.checks.length} publishing essentials complete.`}
+            </p>
+            <div className="completion-track">
+              <span style={{ width: `${(completed / checklist.checks.length) * 100}%` }} />
+            </div>
+            <div className="status-card-actions">
+              <Link href="/dashboard/preview" target="_blank">
+                <Sparkles size={17} /> Preview draft
+              </Link>
+              {live ? (
+                <Link href={`/s/${store.slug}`} target="_blank">
+                  View live <ExternalLink size={16} />
+                </Link>
+              ) : null}
             </div>
           </section>
 
-          <aside className="slice-boundary-card">
-            <span className="section-kicker">Slice 1 complete</span>
-            <h2>Your starting point is ready.</h2>
-            <p>
-              Guided business setup belongs to the next Presence slice and is intentionally not
-              presented as active yet. Your account and store choice are already persisted.
-            </p>
-            <div className="future-step" aria-disabled="true">
-              Continue to business basics <ArrowUpRight size={17} />
-            </div>
-          </aside>
+          <section className="quick-actions-card">
+            <span className="dashboard-label">Quick actions</span>
+            <Link href="/dashboard/website">
+              <Pencil size={18} />
+              <span>
+                <strong>Edit website</strong>
+                <small>Design, content and sections</small>
+              </span>
+              <ArrowRight size={16} />
+            </Link>
+            <Link href="/dashboard/listings">
+              <Sparkles size={18} />
+              <span>
+                <strong>Manage highlights</strong>
+                <small>Show what your business offers</small>
+              </span>
+              <ArrowRight size={16} />
+            </Link>
+            <Link href="/dashboard/settings">
+              <Globe2 size={18} />
+              <span>
+                <strong>Business settings</strong>
+                <small>Hours, contact and location</small>
+              </span>
+              <ArrowRight size={16} />
+            </Link>
+          </section>
         </div>
+
+        {live && store.slug ? (
+          <section className="share-store-card">
+            <div>
+              <span className="share-icon">
+                <QrCode size={23} />
+              </span>
+              <div>
+                <span className="dashboard-label">Share your website</span>
+                <h2>One link for your whole business</h2>
+                <p>Put it in WhatsApp, Instagram, or print the QR for your counter.</p>
+              </div>
+            </div>
+            <div className="share-url">
+              <span>/s/{store.slug}</span>
+              <CopyLinkButton path={`/s/${store.slug}`} />
+              <Link href={`/s/${store.slug}/qr`} target="_blank">
+                Download QR
+              </Link>
+            </div>
+          </section>
+        ) : null}
+
+        {store.type === "PRESENCE" && store.onboardingStep === "COMPLETE" ? (
+          <section className="upgrade-strip">
+            <div>
+              <span>Ready to accept local orders later?</span>
+              <p>Your website, URL, and content will carry over when you enable Local Store.</p>
+            </div>
+            <Link href="/dashboard/upgrade">
+              See Local Store upgrade <ArrowRight size={17} />
+            </Link>
+          </section>
+        ) : null}
       </div>
-    </main>
+    </MerchantShell>
   );
 }

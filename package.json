@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:presence-db": "node scripts/verify-presence-db.mjs",
     "test:watch": "vitest",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
@@ -25,6 +26,7 @@
     "clsx": "latest",
     "lucide-react": "latest",
     "next": "15.5.28",
+    "qrcode": "^1.5.4",
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "zod": "latest"
@@ -35,6 +37,7 @@
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "@types/qrcode": "^1.5.6",
     "eslint": "^9.39.0",
     "eslint-config-next": "15.5.28",
     "prettier": "latest",

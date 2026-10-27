@@ -11,8 +11,9 @@ export default async function StartPage() {
 
   const store = await prisma.store.findUnique({
     where: { ownerUserId: user.id },
-    select: { id: true },
+    select: { id: true, onboardingStep: true },
   });
 
-  redirect(store ? "/dashboard" : "/onboarding/type");
+  if (!store) redirect("/onboarding/type");
+  redirect(store.onboardingStep === "COMPLETE" ? "/dashboard" : "/onboarding/setup");
 }

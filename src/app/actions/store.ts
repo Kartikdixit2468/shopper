@@ -58,5 +58,5 @@ export async function createDraftStore(formData: FormData) {
   }
 
   revalidatePath("/dashboard");
-  redirect("/dashboard?created=1");
+  redirect("/onboarding/setup?step=basics&created=1");
 }

@@ -20,9 +20,9 @@ The repository began with product documentation only, so the build uses a modula
 
 ## Slice 2 — Presence end-to-end
 
-- [ ] Add autosaved guided setup, contact details, media, themes, and configurable sections.
-- [ ] Add revisioned draft/published content, preview, publish, public `/s/[slug]`, sharing, and QR.
-- [ ] Add Presence listings and owner-authorized editing without commerce endpoints.
+- [x] Add autosaved guided setup, contact details, media, themes, and configurable sections.
+- [x] Add revisioned draft/published content, preview, publish, public `/s/[slug]`, sharing, and QR.
+- [x] Add Presence listings and owner-authorized editing without commerce endpoints.
 
 ## Slice 3 — Local Store end-to-end
 
@@ -36,4 +36,4 @@ The repository began with product documentation only, so the build uses a modula
 - [ ] Add tenant-isolation, publish-state, checkout, transition, and mode-gating integration coverage.
 - [ ] Complete production deployment, migration, recovery, and operator documentation.
 
-Only Slice 1 is in scope for the current implementation. Later routes and controls will not be presented as active features.
+Slices 0–2 are complete. Slice 3 remains deliberately inactive: the Presence experience supports discovery and enquiries, but not carts, checkout, payment, fulfilment, or orders.
