@@ -1,0 +1,60 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum StoreType {
+  PRESENCE
+  LOCAL_STORE
+}
+
+enum StoreStatus {
+  DRAFT
+  PUBLISHED
+  SUSPENDED
+}
+
+enum OnboardingStep {
+  BASICS
+  CONTACT
+  BRANDING
+  CATALOG
+  REVIEW
+  COMPLETE
+}
+
+model Profile {
+  id        String   @id @db.Uuid
+  email     String?  @unique
+  name      String?
+  avatarUrl String?
+  store     Store?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Store {
+  id               String         @id @default(cuid())
+  ownerUserId      String         @unique @db.Uuid
+  owner            Profile        @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  type             StoreType
+  status           StoreStatus    @default(DRAFT)
+  onboardingStep   OnboardingStep @default(BASICS)
+  name             String?
+  slug             String?        @unique
+  category         String?
+  shortDescription String?        @db.VarChar(300)
+  timezone         String         @default("Asia/Kolkata")
+  locale           String         @default("en-IN")
+  publishedAt      DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([ownerUserId, status])
+  @@index([slug, status])
+}
